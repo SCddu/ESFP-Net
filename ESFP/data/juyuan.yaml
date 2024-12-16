@@ -1,0 +1,9 @@
+
+train: train.txt
+#val: data/val.txt
+test:test.txt
+val: test/images/
+# number of classes
+nc: 9
+# class names
+names: ['Glassdirty', 'Glassloss','Polymer','Polymerdirty','Two glass','brokendisc','insulator','pollution-flashover','snow']
