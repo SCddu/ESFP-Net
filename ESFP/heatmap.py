@@ -179,7 +179,7 @@ class yolov5_heatmap:
 
 def get_params():
     params = {
-        'weight': '/data0/fqy/yolov5/yolov5/runs/train/exp6/weights/best.pt',
+        'weight': 'runs/train/exp6/weights/best.pt',
         'device': 'cuda:4',
         'method': 'EigenGradCAM', # GradCAMPlusPlus, GradCAM, XGradCAM, EigenCAM, HiResCAM, LayerCAM, RandomCAM, EigenGradCAM
         'layer': [12], # 生成一层的热力图
@@ -193,4 +193,4 @@ def get_params():
 
 if __name__ == '__main__':
     model = yolov5_heatmap(**get_params())
-    model('/data0/fqy/DIOR_HBB/test/images', 'yolo_EigenGradCAM')
+    model('test/images', 'yolo_EigenGradCAM')
