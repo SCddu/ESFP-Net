@@ -177,35 +177,37 @@ class filter(nn.Module):
         self.bn = nn.BatchNorm2d(channel)  
         self.sobel_x1, self.sobel_y1 = self.get_sobel(channel, channel) 
         self.sigmod = nn.Sigmoid()
-
+    def repeatNew(self, x, i, axis1):
+      return np.repeat(x, i, axis=axis1)
+      
     def get_sobel(self, in_chan, out_chan):
-        filter_x = np.array([
+        xfilter = np.array([
             [1, 0, -1],
             [2, 0, -2],
             [1, 0, -1],
         ]).astype(np.float32)
-        filter_y = np.array([
+        yfilter = np.array([
             [1, 2, 1],
             [0, 0, 0],
             [-1, -2, -1],
         ]).astype(np.float32)
 
-        filter_x = filter_x.reshape((1, 1, 3, 3))
-        filter_x = np.repeat(filter_x, in_chan, axis=1)
-        filter_x = np.repeat(filter_x, out_chan, axis=0)
+        xfilter = xfilter.reshape((1, 1, 3, 3))
+        xfilter = repeatNew(xfilter, in_chan, axis=1)
+        xfilter = repeatNew(xfilter, out_chan, axis=0)
 
-        filter_y = filter_y.reshape((1, 1, 3, 3))
-        filter_y = np.repeat(filter_y, in_chan, axis=1)
-        filter_y = np.repeat(filter_y, out_chan, axis=0)
+        yfilter = yfilter.reshape((1, 1, 3, 3))
+        yfilter = repeatNew(yfilter, in_chan, axis=1)
+        yfilter = repeatNew(yfilter, out_chan, axis=0)
 
-        filter_x = torch.from_numpy(filter_x)
-        filter_y = torch.from_numpy(filter_y)
-        filter_x = nn.Parameter(filter_x, requires_grad=False)
-        filter_y = nn.Parameter(filter_y, requires_grad=False)
+        xfilter = torch.from_numpy(xfilter)
+        yfilter = torch.from_numpy(yfilter)
+        xfilter = nn.Parameter(xfilter, requires_grad=False)
+        yfilter = nn.Parameter(yfilter, requires_grad=False)
         conv_x = nn.Conv2d(in_chan, out_chan, kernel_size=3, stride=1, padding=1, bias=False)
-        conv_x.weight = filter_x
+        conv_x.weight = xfilter
         conv_y = nn.Conv2d(in_chan, out_chan, kernel_size=3, stride=1, padding=1, bias=False)
-        conv_y.weight = filter_y
+        conv_y.weight = yfilter
         sobel_x = nn.Sequential(conv_x, nn.BatchNorm2d(out_chan))
         sobel_y = nn.Sequential(conv_y, nn.BatchNorm2d(out_chan))
 
@@ -320,95 +322,6 @@ class Fusion_Block(nn.Module):
         if self.block is not None:
             x = self.block(x)
         return x
-
-
-class Branch(nn.Module):
-    def __init__(self, channel, dimension, bn = False):
-        super().__init__()
-        self.dimension = dimension
-        
-        self.downx = nn.Sequential(nn.Conv2d(channel,  32, kernel_size=6, stride=2,padding=2),
-                                   nn.BatchNorm2d(32),
-                                   nn.Sigmoid())
-        self.downy = nn.Sequential(nn.Conv2d(channel, 32, kernel_size=6, stride=2, padding=2),
-                                   nn.BatchNorm2d(32),
-                                   nn.Sigmoid())
-        self.down3 = nn.Sequential(nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1),
-                                   nn.BatchNorm2d(128),
-                                   nn.Sigmoid())
-        self.down4 = nn.Sequential(nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1),
-                                   nn.BatchNorm2d(256),
-                                   nn.Sigmoid())
-        self.fusion = Fusion_Block(256, bn=bn)
-
-        self.conv1 = nn.Conv2d(channel, channel, kernel_size=3, padding=1,bias=False)
-        self.conv2 = nn.Conv2d(channel, channel, kernel_size=1,bias=False)  # 保持通道数不变
-        self.bn = nn.BatchNorm2d(channel)  # 用于conv1和conv2的输出
-        self.sobel_x1, self.sobel_y1 = self.get_sobel(channel, channel)  # 注意此处
-        self.sigmod = nn.Sigmoid()
-
-    def get_sobel(self, in_chan, out_chan):
-        filter_x = np.array([
-            [1, 0, -1],
-            [2, 0, -2],
-            [1, 0, -1],
-        ]).astype(np.float32)
-        filter_y = np.array([
-            [1, 2, 1],
-            [0, 0, 0],
-            [-1, -2, -1],
-        ]).astype(np.float32)
-
-        filter_x = filter_x.reshape((1, 1, 3, 3))
-        filter_x = np.repeat(filter_x, in_chan, axis=1)
-        filter_x = np.repeat(filter_x, out_chan, axis=0)
-
-        filter_y = filter_y.reshape((1, 1, 3, 3))
-        filter_y = np.repeat(filter_y, in_chan, axis=1)
-        filter_y = np.repeat(filter_y, out_chan, axis=0)
-
-        filter_x = torch.from_numpy(filter_x)
-        filter_y = torch.from_numpy(filter_y)
-        filter_x = nn.Parameter(filter_x, requires_grad=False)
-        filter_y = nn.Parameter(filter_y, requires_grad=False)
-        conv_x = nn.Conv2d(in_chan, out_chan, kernel_size=3, stride=1, padding=1, bias=False)
-        conv_x.weight = filter_x
-        conv_y = nn.Conv2d(in_chan, out_chan, kernel_size=3, stride=1, padding=1, bias=False)
-        conv_y.weight = filter_y
-        sobel_x = nn.Sequential(conv_x, nn.BatchNorm2d(out_chan))
-        sobel_y = nn.Sequential(conv_y, nn.BatchNorm2d(out_chan))
-
-        return sobel_x, sobel_y
-
-    def run_sobel(self, conv_x, conv_y, input):
-        g_x = conv_x(input)
-        g_y = conv_y(input)
-        g = torch.sqrt(torch.pow(g_x, 2) + torch.pow(g_y, 2))
-        return self.sigmod(g) * input
-
-
-    def forward(self, x):
-        y = self.run_sobel(self.sobel_x1, self.sobel_y1, x[0])
-        try:
-            y = y.float()
-            y = F.relu(self.bn(y))
-        except Exception as e:
-            y = y.half()
-            y = F.relu(self.bn(y))
-
-        y = self.conv1(y)
-        y = x[0] + y
-        y = self.conv2(y)
-        y = F.relu(self.bn(y))  
-        x[0] = self.downx(x[0])
-        y = self.downy(y)
-        y = torch.cat((y, x[0]), dim=1)
-        # print(y.shape) # 1,6,256,256
-
-        y = self.down3(y)
-        y = self.down4(y)
-        z = self.fusion(y, x[self.dimension])
-        return z
 
 class Rx(nn.Module):
     def __init__(self):
