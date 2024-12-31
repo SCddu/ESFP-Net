@@ -224,7 +224,7 @@ class filter(nn.Module):
         y = self.conv1(y)
         y = x + y
         y = self.conv2(y)
-        y = F.relu(self.bn(y))  # 使用self.bn而不是self.ban
+        y = F.relu(self.bn(y))
         return y
 
 
@@ -399,7 +399,7 @@ class Branch(nn.Module):
         y = self.conv1(y)
         y = x[0] + y
         y = self.conv2(y)
-        y = F.relu(self.bn(y))  # 使用self.bn而不是self.ban
+        y = F.relu(self.bn(y))  
         x[0] = self.downx(x[0])
         y = self.downy(y)
         y = torch.cat((y, x[0]), dim=1)
