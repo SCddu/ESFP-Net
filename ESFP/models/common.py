@@ -193,12 +193,12 @@ class filter(nn.Module):
         ]).astype(np.float32)
 
         xfilter = xfilter.reshape((1, 1, 3, 3))
-        xfilter = repeatNew(xfilter, in_chan, axis=1)
-        xfilter = repeatNew(xfilter, out_chan, axis=0)
+        xfilter = repeatNew(xfilter, in_chan, 1)
+        xfilter = repeatNew(xfilter, out_chan, 0)
 
         yfilter = yfilter.reshape((1, 1, 3, 3))
-        yfilter = repeatNew(yfilter, in_chan, axis=1)
-        yfilter = repeatNew(yfilter, out_chan, axis=0)
+        yfilter = repeatNew(yfilter, in_chan, 1)
+        yfilter = repeatNew(yfilter, out_chan, 0)
 
         xfilter = torch.from_numpy(xfilter)
         yfilter = torch.from_numpy(yfilter)
